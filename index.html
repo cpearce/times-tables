@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Times Tables Drilling App</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+            }
+            #container {
+                max-width: 400px;
+                margin: 0 auto;
+                text-align: center;
+            }
+            #progress {
+                width: 100%;
+                background-color: #ddd;
+            }
+            #progress-bar {
+                width: 100%;
+                height: 30px;
+                background-color: #4caf50;
+                text-align: center;
+                line-height: 30px;
+                color: white;
+            }
+            #drill {
+                display: none;
+            }
+            #summary {
+                display: none;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="container">
+            <h1>Times Tables Drilling App</h1>
+            <div id="menu">
+                <label for="table" id="tableLabel">Select a times table:</label>
+                <select id="table">
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5">5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                </select>
+                <button id="startButton">Start Drilling!</button>
+            </div>
+            <div id="drill">
+                <h2>
+                    What's <span id="factor1"></span> times
+                    <span id="factor2"></span>?
+                </h2>
+                <input type="text" id="userAnswer" placeholder="Your Answer" />
+                <button id="checkAnswer">Check</button>
+                <p id="result">&nbsp;</p>
+                <div id="progress">
+                    <div id="progress-bar"></div>
+                </div>
+            </div>
+            <div id="summary">
+                <h2>Quiz Complete!</h2>
+                <p>Your Score: <span id="scoreSpan"></span> out of 12.</p>
+                <p>Time Taken: <span id="timeTaken"></span> seconds.</p>
+                <button id="restartButton">Restart</button>
+            </div>
+        </div>
+
+        <script>
+            const tableSelect = document.getElementById('table');
+            const startButton = document.getElementById('startButton');
+            const drill = document.getElementById('drill');
+            const tableLabel = document.getElementById('tableLabel');
+            const factor1 = document.getElementById('factor1');
+            const factor2 = document.getElementById('factor2');
+            const userAnswer = document.getElementById('userAnswer');
+            const checkAnswer = document.getElementById('checkAnswer');
+            const result = document.getElementById('result');
+            const progressBar = document.getElementById('progress-bar');
+            const menu = document.getElementById('menu');
+            const timeTaken = document.getElementById('timeTaken');
+            const scoreSpan = document.getElementById('scoreSpan');
+            const summary = document.getElementById('summary');
+            const restartButtonElement =
+                document.getElementById('restartButton');
+
+            let currentTable;
+            let score = 0;
+            let questionCount = 0;
+            let timer;
+            let questionQueue = [];
+            let timeLeft = 10;
+            let drillStartTime;
+
+            startButton.addEventListener('click', () => {
+                event.preventDefault();
+                currentTable = parseInt(tableSelect.value);
+                score = 0;
+                questionCount = 0;
+                generateQuestionQueue();
+                drillStartTime = new Date();
+                menu.style.display = 'none';
+                drill.style.display = 'block';
+                nextQuestion();
+            });
+
+            checkAnswer.addEventListener('click', checkAndProceed);
+            userAnswer.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    checkAndProceed();
+                }
+            });
+
+            function generateQuestionQueue() {
+                questionQueue = [];
+                for (let i = 1; i <= 12; i++) {
+                    questionQueue.push(i);
+                }
+                // Shuffle the question queue to randomize the order
+                for (let i = questionQueue.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [questionQueue[i], questionQueue[j]] = [
+                        questionQueue[j],
+                        questionQueue[i],
+                    ];
+                }
+            }
+
+            function checkAndProceed() {
+                clearTimeout(timer);
+                checkAnswer.disabled = true;
+                userAnswer.disabled = true;
+                const answer = parseInt(userAnswer.value);
+                if (answer === currentTable * factor2.textContent) {
+                    result.textContent = 'Correct!';
+                    score++;
+                    setTimeout(proceed, 500);
+                } else {
+                    result.textContent =
+                        currentTable +
+                        ' x ' +
+                        factor2.textContent +
+                        ' = ' +
+                        currentTable * factor2.textContent +
+                        '.';
+                    setTimeout(proceed, 3000);
+                }
+            }
+
+            function proceed() {
+                checkAnswer.disabled = false;
+                userAnswer.disabled = false;
+                questionCount++;
+                if (questionCount < questionQueue.length) {
+                    nextQuestion();
+                } else {
+                    const drillEndTime = new Date();
+                    const timeTakenInSeconds =
+                        (drillEndTime - drillStartTime) / 1000;
+                    showScore(timeTakenInSeconds);
+                }
+            }
+
+            function updateProgressBar() {
+                const progressPercentage = (timeLeft / 10) * 100;
+                progressBar.style.width = progressPercentage + '%';
+            }
+
+            function nextQuestion() {
+                userAnswer.focus({ visible: true });
+                const currentFactor = questionQueue[questionCount];
+                factor1.textContent = currentTable;
+                factor2.textContent = currentFactor;
+                userAnswer.value = '';
+                result.textContent = '';
+                timeLeft = 10;
+                updateProgressBar();
+                timer = setInterval(() => {
+                    timeLeft--;
+                    if (timeLeft <= 0) {
+                        clearInterval(timer);
+                        result.textContent =
+                            "Time's up! " +
+                            currentTable +
+                            ' x ' +
+                            factor2.textContent +
+                            ' = ' +
+                            currentTable * factor2.textContent +
+                            '.';
+                        setTimeout(proceed, 3000);
+                    }
+                    updateProgressBar();
+                }, 1000);
+            }
+
+            function showScore(timeTakenInSeconds) {
+                drill.style.display = 'none';
+                console.log(`showScore: ${score}`);
+                scoreSpan.textContent = '' + score;
+                timeTaken.textContent = timeTakenInSeconds;
+                summary.style.display = 'block';
+            }
+
+            restartButtonElement.addEventListener('click', () => {
+                summary.style.display = 'none';
+                menu.style.display = 'block';
+            });
+        </script>
+    </body>
+</html>
